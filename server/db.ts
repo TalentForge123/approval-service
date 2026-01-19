@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, dealSnapshots, DealSnapshot, InsertDealSnapshot, approvalTokens, InsertApprovalToken, approvalEvents, InsertApprovalEvent, webhookConfigs, InsertWebhookConfig } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -87,6 +87,93 @@ export async function getUserByOpenId(openId: string) {
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+// Deal management queries
+export async function createDealSnapshot(deal: InsertDealSnapshot) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(dealSnapshots).values(deal);
+  return result;
+}
+
+export async function getDealById(dealId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.select().from(dealSnapshots).where(eq(dealSnapshots.id, dealId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getAllDeals() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.select().from(dealSnapshots).orderBy(desc(dealSnapshots.createdAt));
+}
+
+export async function updateDealStatus(dealId: string, status: DealSnapshot["status"]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.update(dealSnapshots).set({ status }).where(eq(dealSnapshots.id, dealId));
+}
+
+// Token management queries
+export async function createApprovalToken(token: InsertApprovalToken) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.insert(approvalTokens).values(token);
+}
+
+export async function getTokenByHash(tokenHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.select().from(approvalTokens).where(eq(approvalTokens.tokenHash, tokenHash)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function markTokenAsUsed(tokenId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.update(approvalTokens).set({ usedAt: new Date() }).where(eq(approvalTokens.id, tokenId));
+}
+
+// Event logging queries
+export async function createApprovalEvent(event: InsertApprovalEvent) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.insert(approvalEvents).values(event);
+}
+
+export async function getAuditTrail(dealId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.select().from(approvalEvents).where(eq(approvalEvents.dealId, dealId)).orderBy(asc(approvalEvents.createdAt));
+}
+
+// Webhook configuration queries
+export async function createWebhookConfig(config: InsertWebhookConfig) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.insert(webhookConfigs).values(config);
+}
+
+export async function getWebhookConfigs(dealId?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  if (dealId) {
+    return await db.select().from(webhookConfigs).where(eq(webhookConfigs.dealId, dealId));
+  }
+  return await db.select().from(webhookConfigs).where(eq(webhookConfigs.isActive, 1));
 }
 
 // TODO: add feature queries here as your schema grows.
