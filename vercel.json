@@ -1,34 +1,12 @@
 {
-  "buildCommand": "pnpm build",
+  "buildCommand": "pnpm install && pnpm build",
   "devCommand": "pnpm dev",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
-  "outputDirectory": "dist",
+  "outputDirectory": ".",
   "public": false,
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "functions": {
-    "server/_core/index.ts": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/trpc/:path*",
-      "destination": "/api/trpc/:path*"
-    },
-    {
-      "source": "/api/oauth/:path*",
-      "destination": "/api/oauth/:path*"
-    },
-    {
-      "source": "/:path*",
-      "destination": "/index.html"
-    }
-  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "headers": [
     {
       "source": "/api/:path*",
@@ -36,8 +14,22 @@
         {
           "key": "Cache-Control",
           "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
     }
   ]
 }
